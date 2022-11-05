@@ -46,19 +46,37 @@ FROM (
 app.get('/api/search', async (req, res) => {
   let allData = {};
   const tables = Object.keys(eq_table)
-  for await (const table of tables){
-    await db.query(`SELECT ${eq_table[table].display}, ST_AsGeoJSON(geom)::jsonb FROM ${eq_table[table].table} WHERE LOWER(${eq_table[table].display}) LIKE '%${req.query.content}%'`)
-      .then((data) => {        
+  for await (const table of tables) {
+    await db.query(`SELECT ${eq_table[table].display}, ST_AsGeoJSON(geom)::jsonb, gid FROM ${eq_table[table].table} WHERE LOWER(${eq_table[table].display}) LIKE '%${req.query.content}%'`)
+      .then((data) => {
         allData[table] = data
       })
       .catch((error) => {
         console.log('ERROR:', error)
       })
-  };  
+  };
   return res.send(allData)
 })
 
 app.get('/api/one', async (req, res) => {
+  db.query(`SELECT jsonb_build_object(
+    'type',     'FeatureCollection',
+    'features', jsonb_agg(features.feature)
+)
+FROM (
+  SELECT jsonb_build_object(
+    'type',       'Feature',
+    'id',         gid,
+    'geometry',   ST_AsGeoJSON(geom)::jsonb,
+    'properties', to_jsonb(inputs) - 'gid' - 'geom'
+  ) AS feature
+  FROM (SELECT * FROM ${eq_table[req.query.layer].table} WHERE gid=${req.query.gid}) inputs) features;`)
+    .then((data) => {
+      return res.send(data[0].jsonb_build_object)
+    })
+    .catch((error) => {
+      console.log('ERROR:', error)
+    })
 })
 
 
