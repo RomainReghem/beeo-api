@@ -14,15 +14,24 @@ app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
+// Table : name of the table in the database
+// Display : What we want to display in the search section
+// Search : Can the user search inside this database
+// Dpt : What's the column with the department info
 const eq_table = {
-  indus: {
-    table: 'public.installationsclassees_france',
-    display: 'nom_ets'
-  }
+  indus: { table: 'indus', display: 'nom_ets', search: true, dpt: null },
+  eol: { table: 'eol', display: 'id_aerogen', search: true, dpt: 'code_dept' },
+  fbio: { table: 'fbio', display: 'Nom', search: true, dpt: null },
+  zbio: { table: 'zbio', display: 'LBL_CULTU', search: false, dpt: null },
+  riv: { table: 'riv', display: 'Libelle', search: true, dpt: null },
+  pollu: { table: 'pollu', display: 'nom_site', search: true, dpt: 'code_dpt' },
 }
 
 app.get('/api/layers', (req, res) => {
-  // db.query('SELECT * FROM public.installationsclassees_france ORDER BY gid ASC')
+  let where
+  if (req.query.dpt && eq_table[req.query.layer].dpt && req.query.dpt != 1) {
+    where = `WHERE ${eq_table[req.query.layer].dpt}::int=${req.query.dpt}`
+  } else where = 'WHERE true'
   db.query(`SELECT jsonb_build_object(
     'type',     'FeatureCollection',
     'features', jsonb_agg(features.feature)
@@ -34,7 +43,7 @@ FROM (
     'geometry',   ST_AsGeoJSON(geom)::jsonb,
     'properties', to_jsonb(inputs) - 'gid' - 'geom'
   ) AS feature
-  FROM (SELECT * FROM ${eq_table[req.query.layer].table}) inputs) features;`)
+  FROM (SELECT * FROM ${eq_table[req.query.layer].table} ${where})  inputs) features;`)
     .then((data) => {
       return res.send(data[0].jsonb_build_object)
     })
@@ -47,13 +56,15 @@ app.get('/api/search', async (req, res) => {
   let allData = {};
   const tables = Object.keys(eq_table)
   for await (const table of tables) {
-    await db.query(`SELECT ${eq_table[table].display}, ST_AsGeoJSON(geom)::jsonb, gid FROM ${eq_table[table].table} WHERE LOWER(${eq_table[table].display}) LIKE '%${req.query.content}%'`)
-      .then((data) => {
-        allData[table] = data
-      })
-      .catch((error) => {
-        console.log('ERROR:', error)
-      })
+    if (eq_table[table].search) {
+      await db.query(`SELECT ${eq_table[table].display}, ST_AsGeoJSON(geom)::jsonb, gid FROM ${eq_table[table].table} WHERE LOWER(${eq_table[table].display}) LIKE '%${req.query.content}%'`)
+        .then((data) => {
+          allData[table] = data
+        })
+        .catch((error) => {
+          console.log('ERROR:', error)
+        })
+    }
   };
   return res.send(allData)
 })
