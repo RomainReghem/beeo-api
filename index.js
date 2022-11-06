@@ -8,7 +8,7 @@ app.use(cors({
 
 require('dotenv').config()
 const pgp = require('pg-promise')(/* options */)
-const db = pgp(`${process.env.DIALECT}://${process.env.USER}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.PORT}/${process.env.DB}`)
+const db = pgp(`${process.env.DIALECT}://${process.env.USER}:${process.env.PASSWORD}@${process.env.HOST}:${process.env.DBPORT}/${process.env.DB}`)
 
 app.get('/', (req, res) => {
   res.send('Hello World!')
