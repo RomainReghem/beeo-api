@@ -2,6 +2,8 @@ const express = require('express')
 const app = express()
 const cors = require('cors');
 
+const bigbox = '{"type": "Polygon", "coordinates": [[[ 2.2927117966620396, 43.56198416615212 ], [ 2.2927117966620396, 43.651727421218276 ], [ 2.1991563462225865, 43.651727421218276 ], [ 2.1991563462225865, 43.56198416615212 ], [ 2.2927117966620396, 43.56198416615212 ] ] ]}'
+
 app.use(cors({
   origin: '*'
 }));
@@ -28,6 +30,8 @@ const eq_table = {
 }
 
 app.get('/api/layers', (req, res) => {
+  console.log(req.query.bounds)
+  console.log(bigbox)
   let where
   if (req.query.dpt && eq_table[req.query.layer].dpt && req.query.dpt != 1) {
     where = `WHERE ${eq_table[req.query.layer].dpt}::int=${req.query.dpt}`
@@ -43,7 +47,7 @@ FROM (
     'geometry',   ST_AsGeoJSON(geom)::jsonb,
     'properties', to_jsonb(inputs) - 'gid' - 'geom'
   ) AS feature
-  FROM (SELECT * FROM ${eq_table[req.query.layer].table} ${where})  inputs) features;`)
+  FROM (SELECT * FROM ${eq_table[req.query.layer].table} ${where} AND ST_Contains(ST_GeomFromGeoJSON('${req.query.bounds}'), ST_GeomFromGeoJSON(ST_AsGeoJSON(geom))))  inputs) features;`)
     .then((data) => {
       return res.send(data[0].jsonb_build_object)
     })
