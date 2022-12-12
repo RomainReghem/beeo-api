@@ -22,7 +22,7 @@ const eq_table = {
   indus: { table: 'indus', display: 'nom_ets', search: true, dpt: null },
   eol: { table: 'eol', display: 'id_aerogen', search: true, dpt: 'code_dept' },
   fbio: { table: 'fbio', display: 'Nom', search: true, dpt: null },
-  zbio: { table: 'zbio', display: 'LBL_CULTU', search: false, dpt: null },
+  zbio: { table: 'zbios', display: 'LBL_CULTU', search: false, dpt: null },
   riv: { table: 'riv', display: 'Libelle', search: true, dpt: null },
   pollu: { table: 'pollu', display: 'nom_site', search: true, dpt: 'code_dpt' },
   inci: {table: 'inci', display:'exploitant', search:true, dpt:'c_dept'},
@@ -39,7 +39,8 @@ app.get('/api/layers', (req, res) => {
   } else where = 'WHERE true'
 
   if (req.query.layer == "zbio") {
-    where2 = `ST_Contains(ST_GeomFromGeoJSON('${req.query.bounds}'), ST_GeomFromGeoJSON(ST_AsGeoJSON(geom)))`
+    where2 = `ST_Contains('${req.query.bounds}', geom)`
+    // where2 = `ST_Distance('${req.query.bounds}', geom) < 0.00001`
   } else where2 = 'true'
   db.query(`SELECT jsonb_build_object(
     'type',     'FeatureCollection',
