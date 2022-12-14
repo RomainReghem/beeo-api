@@ -39,7 +39,7 @@ app.get('/api/layers', (req, res) => {
   } else where = 'WHERE true'
 
   if (req.query.layer == "zbio") {
-    where2 = `ST_Contains('${req.query.bounds}', geom)`
+    where2 = `ST_Contains('${req.query.bounds}', geom) LIMIT 1000`
     // where2 = `ST_Distance('${req.query.bounds}', geom) < 0.00001`
   } else where2 = 'true'
   db.query(`SELECT jsonb_build_object(
