@@ -21,13 +21,12 @@ app.get('/', (req, res) => {
 const eq_table = {
   indus: { table: 'indus', display: 'nom_ets', search: true, dpt: null },
   eol: { table: 'eol', display: 'id_aerogen', search: true, dpt: 'code_dept' },
-  fbio: { table: 'fbio', display: 'Nom', search: true, dpt: null },
+  fbio: { table: 'fbio', display: 'produits', search: true, dpt: null },
   zbio: { table: 'zbios', display: 'LBL_CULTU', search: false, dpt: null },
   riv: { table: 'riv', display: 'Libelle', search: true, dpt: null },
   pollu: { table: 'pollu', display: 'nom_site', search: true, dpt: 'code_dpt' },
   inci: {table: 'inci', display:'exploitant', search:true, dpt:'c_dept'},
   dechets:{table: 'dechets', display:'', search:true, dpt:null},
-  corse: {table:'corsebio', display:'nom_servic', search:false, dpt:null}
 }
 
 app.get('/api/layers', (req, res) => {
@@ -67,9 +66,11 @@ app.get('/api/search', async (req, res) => {
   let allData = {};
   const tables = Object.keys(eq_table)
   for await (const table of tables) {
+    console.log(table)
     if (eq_table[table].search) {
       await db.query(`SELECT ${eq_table[table].display}, ST_AsGeoJSON(geom)::jsonb, gid FROM ${eq_table[table].table} WHERE LOWER(${eq_table[table].display}) LIKE '%${req.query.content}%'`)
         .then((data) => {
+          console.log(data)
           allData[table] = data
         })
         .catch((error) => {
